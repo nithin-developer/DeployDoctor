@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+instance/
+.venv/
+.vscode/
+*.zip
+temp/
+Deployment.txt
