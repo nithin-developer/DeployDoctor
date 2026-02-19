@@ -1,4 +1,4 @@
-import { IconLayoutDashboard, IconShieldLock } from "@tabler/icons-react";
+import { IconLayoutDashboard, IconShieldLock, IconAnalyze } from "@tabler/icons-react";
 import { Settings } from "lucide-react";
 
 import { IconPalette, IconTool, IconLock } from "@tabler/icons-react";
@@ -26,6 +26,11 @@ export const sidebarData: SidebarData = {
           title: "Dashboard",
           url: "/",
           icon: IconLayoutDashboard,
+        },
+        {
+          title: "Repository Analysis",
+          url: "/analysis",
+          icon: IconAnalyze,
         },
       ],
     },

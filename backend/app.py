@@ -1,6 +1,12 @@
 import os
+import sys
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime
+
+# Fix for Windows: asyncio.create_subprocess_exec requires ProactorEventLoop
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +19,7 @@ load_dotenv()
 from routes.auth_router import router as auth_router
 from routes.agent_router import router as agent_router
 from routes.dashboard_router import router as dashboard_router
+from routes.analysis_router import router as analysis_router
 
 # Import database
 from config.database import init_db
@@ -68,11 +75,20 @@ app.add_middleware(
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
+    from services.analysis_service import analysis_service
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "version": settings.APP_VERSION,
-        "app": settings.APP_NAME
+        "app": settings.APP_NAME,
+        "agents": {
+            "code_review": "active",
+            "test_runner": "active",
+            "orchestrator": "active",
+            "code_fixer": "active",
+            "test_generator": "active"
+        },
+        "active_analyses": len(analysis_service.active_analyses)
     }
 
 
@@ -86,6 +102,9 @@ app.include_router(agent_router)
 
 # Dashboard routes: /api/dashboard/*
 app.include_router(dashboard_router)
+
+# Analysis routes: /api/analyze/*
+app.include_router(analysis_router)
 
 
 # ============ ROOT ============
@@ -104,8 +123,9 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "main:app",
+        "app:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG
+        reload=settings.DEBUG,
+        reload_excludes=["temp_repos/*", "results_cache/*", "reports/*"]
     )

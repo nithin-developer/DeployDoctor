@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Temp directory for cloned repos
     TEMP_DIR: str = ""  # Empty = use system temp
     
+    # Temp repo dir for analysis agent (auto-computed if empty)
+    TEMP_REPO_DIR: str = ""
+    
     # ============ CI/CD Agent Settings ============
     
     # GitHub
@@ -38,7 +41,7 @@ class Settings(BaseSettings):
     
     # Groq LLM
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"  # or mixtral-8x7b-32768, llama2-70b-4096
+    GROQ_MODEL: str = "meta-llama/llama-4-scout-17b-16e-instruct"
     
     # Docker
     DOCKER_MEMORY_LIMIT: str = "512m"
@@ -61,4 +64,8 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached settings instance."""
-    return Settings()
+    s = Settings()
+    # Auto-compute TEMP_REPO_DIR if not set
+    if not s.TEMP_REPO_DIR:
+        s.TEMP_REPO_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "temp_repos")
+    return s

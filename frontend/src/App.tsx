@@ -34,6 +34,10 @@ import SettingsAppearance from "./pages/settings/appearance";
 import SettingsSecurity from "./pages/settings/security";
 import SettingsTwoFA from "./pages/settings/2fa-auth";
 
+// Analysis Pages
+import AnalysisPage from "./pages/analysis";
+import AnalysisResultPage from "./pages/analysis/result";
+
 // Create Query Client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -140,7 +144,10 @@ function App() {
           >
             {/* Dashboard */}
             <Route index element={<Dashboard />} />
-          
+
+            {/* Analysis Routes */}
+            <Route path="analysis" element={<AnalysisPage />} />
+            <Route path="analysis/:analysisId" element={<AnalysisResultPage />} />
 
             {/* Settings Routes - Available for all authenticated users */}
             <Route path="settings" element={<Settings />}>
