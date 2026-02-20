@@ -3,7 +3,7 @@ import { Settings } from "lucide-react";
 
 import { IconPalette, IconTool, IconLock } from "@tabler/icons-react";
 import { type SidebarData } from "../types";
-import Logo from "@/assets/vvce.jpg";
+import Logo from "@/assets/vvce.png";
 
 export const sidebarData: SidebarData = {
   user: {
