@@ -20,7 +20,6 @@ export function debugAuth() {
     user: authStore.auth.user ? {
       id: authStore.auth.user.id,
       email: authStore.auth.user.email,
-      role: authStore.auth.user.role,
     } : null,
     expiresAt: authStore.auth.expiresAt ? new Date(authStore.auth.expiresAt).toISOString() : null,
     expired: authStore.auth.expiresAt ? Date.now() > authStore.auth.expiresAt : null

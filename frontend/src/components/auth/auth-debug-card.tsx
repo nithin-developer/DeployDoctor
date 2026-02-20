@@ -73,7 +73,6 @@ export function AuthDebugCard() {
           <h4 className="font-semibold">Current Auth State:</h4>
           <div className="bg-muted p-3 rounded text-sm">
             <div>User: {auth.user?.email || 'None'}</div>
-            <div>Role: {auth.user?.role || 'None'}</div>
             <div>Token: {auth.accessToken ? `${auth.accessToken.substring(0, 20)}...` : 'None'}</div>
             <div>Authenticated: {auth.isAuthenticated() ? 'Yes' : 'No'}</div>
             {auth.expiresAt && (

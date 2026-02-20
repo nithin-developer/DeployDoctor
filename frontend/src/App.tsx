@@ -25,9 +25,6 @@ import UnauthorizedError from "@/pages/errors/unauthorized-error";
 import ForbiddenError from "@/pages/errors/forbidden";
 import MaintenanceError from "@/pages/errors/maintenance-error";
 
-// Protected Route Component
-import { ProtectedRoute } from "@/components/auth/protected-route";
-
 // Batches Feature Pages
 import Settings from "./pages/settings";
 import SettingsAccount from "./pages/settings/account";
