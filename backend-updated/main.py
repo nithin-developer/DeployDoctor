@@ -29,7 +29,12 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "*", "https://deploy-doctor-orcin.vercel.app/"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://deploy-doctor-orcin.vercel.app",
+        "https://deploydoctor.onrender.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
