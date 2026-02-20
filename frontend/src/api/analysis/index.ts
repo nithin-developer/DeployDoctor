@@ -9,6 +9,8 @@ export interface AnalysisRequest {
   github_token?: string;
   generate_tests?: boolean;
   push_to_github?: boolean;
+  create_pr?: boolean;
+  auto_merge_on_ci_success?: boolean;
 }
 
 export interface AnalyzeResponse {
@@ -62,6 +64,27 @@ export interface AnalysisResult {
   commit_sha?: string;
   branch_url?: string;
   commit_message?: string;
+  // PR and CI fields
+  pr_url?: string;
+  pr_number?: number;
+  ci_status?: "pending" | "running" | "success" | "failure" | "unknown";
+  merged?: boolean;
+}
+
+export interface CIStatusResponse {
+  status: string;
+  conclusion?: string;
+  workflow_url?: string;
+  pr_url?: string;
+  pr_number?: number;
+  merged: boolean;
+  message: string;
+}
+
+export interface MergeResponse {
+  status: string;
+  message: string;
+  merge_sha?: string;
 }
 
 export interface AnalysisResultResponse {
@@ -107,5 +130,20 @@ export const analysisApi = {
   getPdfReportUrl(analysisId: string): string {
     const base = apiClient.defaults.baseURL || "";
     return `${base}/api/analyze/${analysisId}/report/pdf`;
+  },
+
+  /** Get CI/CD status for an analysis */
+  async getCIStatus(analysisId: string, githubToken?: string): Promise<CIStatusResponse> {
+    const params = githubToken ? { github_token: githubToken } : {};
+    const res = await apiClient.get(`/api/analyze/${analysisId}/ci-status`, { params });
+    return res.data;
+  },
+
+  /** Manually trigger PR merge */
+  async mergePR(analysisId: string, githubToken: string): Promise<MergeResponse> {
+    const res = await apiClient.post(`/api/analyze/${analysisId}/merge`, null, {
+      params: { github_token: githubToken }
+    });
+    return res.data;
   },
 };

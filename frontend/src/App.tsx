@@ -15,6 +15,7 @@ if (import.meta.env.DEV) {
 // Pages
 import Dashboard from "@/pages/dashboard";
 import SignIn from "@/pages/auth/sign-in";
+import SignUp from "@/pages/auth/sign-up";
 import TwoFAVerify from "@/pages/auth/two-fa-verify";
 import ForgotPassword from "@/pages/auth/forgot-password";
 import Otp from "@/pages/auth/otp";
@@ -119,6 +120,14 @@ function App() {
             element={
               <AuthRedirect>
                 <SignIn />
+              </AuthRedirect>
+            }
+          />
+          <Route
+            path="/sign-up"
+            element={
+              <AuthRedirect>
+                <SignUp />
               </AuthRedirect>
             }
           />

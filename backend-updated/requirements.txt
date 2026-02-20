@@ -1,0 +1,33 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+pydantic-settings
+httpx
+gitpython
+requests
+# Database
+sqlalchemy[asyncio]
+asyncpg
+psycopg2-binary
+alembic
+# Auth
+pyjwt
+bcrypt
+pyotp
+python-multipart
+# LangChain & Groq
+langchain
+langchain-core
+langchain-groq
+groq
+# Docker
+docker
+# Analysis agent dependencies
+aiofiles
+numpy
+reportlab
+# Linting tools for code analysis
+ruff
+flake8
+pylint

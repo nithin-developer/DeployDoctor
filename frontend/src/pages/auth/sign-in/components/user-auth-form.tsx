@@ -21,9 +21,7 @@ import { PasswordInput } from "@/components/password-input";
 type UserAuthFormProps = HTMLAttributes<HTMLFormElement>;
 
 const formSchema = z.object({
-  email: z.email({
-    message: "Please enter a valid email address",
-  }),
+  email: z.string().email("Please enter a valid email address"),
   password: z.string().min(1, "Please enter your password"),
 });
 
@@ -120,6 +118,16 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
         <Button type="submit" className="mt-2" disabled={isLoading}>
           {isLoading ? "Signing in..." : "Sign In"}
         </Button>
+
+        <p className="text-muted-foreground text-center text-sm">
+          Don't have an account?{" "}
+          <Link
+            to="/sign-up"
+            className="text-primary hover:underline underline-offset-4"
+          >
+            Sign up
+          </Link>
+        </p>
       </form>
     </Form>
   );

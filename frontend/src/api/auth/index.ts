@@ -26,6 +26,20 @@ export async function login(
   return data;
 }
 
+export async function register(
+  full_name: string,
+  email: string,
+  password: string,
+  confirm_password: string
+): Promise<void> {
+  await apiClient.post("/api/auth/register", {
+    full_name,
+    email,
+    password,
+    confirm_password,
+  });
+}
+
 export async function verifyTwoFA(twofaToken: string, code: string) {
   const res = await apiClient.post("/api/auth/verify-2fa", {
     twofa_token: twofaToken,

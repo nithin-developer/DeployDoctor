@@ -27,3 +27,4 @@ dist-ssr
 *.tanstack
 
 __pycache__
+backend-updated/

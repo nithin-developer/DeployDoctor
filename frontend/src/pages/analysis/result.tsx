@@ -19,6 +19,15 @@ import {
   Shield,
   Copy,
   Check,
+  GitPullRequest,
+  GitMerge,
+  PlayCircle,
+  RefreshCw,
+  Zap,
+  AlertTriangle,
+  Activity,
+  Target,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -66,6 +75,7 @@ import {
   type AnalysisResult,
   type CodeFix,
   type TestResult,
+  type CIStatusResponse,
 } from "@/api/analysis";
 
 // ============ STATUS POLLING PAGE ============
@@ -182,14 +192,21 @@ export default function AnalysisResultPage() {
         </div>
       </Header>
       <Main>
-        <div className="mx-auto max-w-5xl space-y-6">
-          {/* Back button */}
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/analysis">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Analysis
-            </Link>
-          </Button>
+        <div className="w-full space-y-6">
+          {/* Navigation */}
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" asChild className="gap-2">
+              <Link to="/analysis">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Analysis
+              </Link>
+            </Button>
+            {analysisId && (
+              <Badge variant="outline" className="font-mono text-xs">
+                ID: {analysisId.slice(0, 8)}...
+              </Badge>
+            )}
+          </div>
 
           {/* If still loading / polling */}
           {loading && !result && !error && (
@@ -201,12 +218,16 @@ export default function AnalysisResultPage() {
 
           {/* Error state */}
           {error && !result && (
-            <Card className="border-destructive/50">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <XCircle className="h-12 w-12 text-destructive mb-4" />
-                <h2 className="text-xl font-semibold">Analysis Failed</h2>
-                <p className="text-muted-foreground mt-2 max-w-md">{error}</p>
-                <Button className="mt-6" onClick={() => navigate("/analysis")}>
+            <Card className="relative overflow-hidden border-destructive/30 bg-destructive/5">
+              <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 via-transparent to-destructive/10" />
+              <CardContent className="relative flex flex-col items-center justify-center py-16 text-center">
+                <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
+                  <XCircle className="h-8 w-8 text-destructive" />
+                </div>
+                <h2 className="text-2xl font-semibold">Analysis Failed</h2>
+                <p className="text-muted-foreground mt-3 max-w-md">{error}</p>
+                <Button className="mt-8" size="lg" onClick={() => navigate("/analysis")}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
                   Try Again
                 </Button>
               </CardContent>
@@ -236,67 +257,180 @@ function AnalysisPollingView({
   onCancel: () => void;
 }) {
   return (
-    <Card className="relative overflow-hidden border border-border/60 bg-card/60 backdrop-blur supports-[backdrop-filter]:bg-card/50">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-100" />
-      <CardContent className="relative flex flex-col items-center justify-center py-16 text-center">
-        <div className="relative mb-6">
-          <div className="h-20 w-20 rounded-full border-4 border-primary/20 flex items-center justify-center">
-            <Loader2 className="h-10 w-10 text-primary animate-spin" />
+    <div className="space-y-6">
+      {/* Hero Loading Section */}
+      <Card className="relative overflow-hidden border-border/40 bg-gradient-to-br from-card via-card/95 to-card/90">
+        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px]" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
+        
+        <CardContent className="relative py-16">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-12">
+            {/* Left: Animation */}
+            <div className="flex-shrink-0 flex justify-center lg:justify-start">
+              <div className="relative">
+                <div className="h-32 w-32 rounded-full border-4 border-primary/20 flex items-center justify-center bg-card shadow-2xl">
+                  <Loader2 className="h-14 w-14 text-primary animate-spin" />
+                </div>
+                <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                  <Activity className="h-4 w-4 text-primary" />
+                </div>
+                <div className="absolute -bottom-1 -left-1 h-6 w-6 rounded-full bg-green-500/20 flex items-center justify-center animate-pulse delay-300">
+                  <Zap className="h-3 w-3 text-green-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Content */}
+            <div className="flex-1 text-center lg:text-left space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-center lg:justify-start gap-3">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                    <Activity className="h-3 w-3 mr-1.5 animate-pulse" />
+                    In Progress
+                  </Badge>
+                </div>
+                <h2 className="text-3xl font-bold tracking-tight">Analyzing Repository</h2>
+                <p className="text-muted-foreground max-w-lg">
+                  {status?.message || "Initializing the multi-agent analysis pipeline..."}
+                </p>
+              </div>
+
+              {/* Progress Section */}
+              <div className="max-w-lg mx-auto lg:mx-0 space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-medium capitalize text-foreground">
+                    {status?.current_step?.replace(/_/g, " ") || "Starting"}
+                  </span>
+                  <span className="text-primary font-bold">{status?.progress ?? 0}%</span>
+                </div>
+                <div className="relative">
+                  <Progress value={status?.progress ?? 0} className="h-3" />
+                  <div 
+                    className="absolute top-0 h-3 bg-primary/30 rounded-full blur-sm transition-all duration-500"
+                    style={{ width: `${status?.progress ?? 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <h2 className="text-xl font-semibold">Analyzing Repository</h2>
-        <p className="text-muted-foreground mt-2 max-w-md">
-          {status?.message || "Initializing the multi-agent analysis pipeline..."}
-        </p>
+      {/* Pipeline Steps Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <PipelineStep 
+          label="Clone Repo" 
+          icon={GitBranch}
+          active={statusInRange(status, 0, 15)} 
+          done={statusPast(status, 15)} 
+          step={1}
+        />
+        <PipelineStep 
+          label="Code Review" 
+          icon={Bug}
+          active={statusInRange(status, 15, 35)} 
+          done={statusPast(status, 35)} 
+          step={2}
+        />
+        <PipelineStep 
+          label="Run Tests" 
+          icon={FlaskConical}
+          active={statusInRange(status, 35, 55)} 
+          done={statusPast(status, 55)} 
+          step={3}
+        />
+        <PipelineStep 
+          label="Fix Issues" 
+          icon={Wrench}
+          active={statusInRange(status, 55, 75)} 
+          done={statusPast(status, 75)} 
+          step={4}
+        />
+        <PipelineStep 
+          label="Generate Tests" 
+          icon={Shield}
+          active={statusInRange(status, 75, 90)} 
+          done={statusPast(status, 90)} 
+          step={5}
+        />
+        <PipelineStep 
+          label="Push to GitHub" 
+          icon={GitPullRequest}
+          active={statusInRange(status, 90, 100)} 
+          done={statusPast(status, 100)} 
+          step={6}
+        />
+      </div>
 
-        {/* Progress bar */}
-        <div className="w-full max-w-sm mt-6 space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span className="capitalize">{status?.current_step?.replace(/_/g, " ") || "Starting"}</span>
-            <span>{status?.progress ?? 0}%</span>
-          </div>
-          <Progress value={status?.progress ?? 0} className="h-2" />
-        </div>
-
-        {/* Pipeline steps */}
-        <div className="mt-8 grid grid-cols-2 gap-3 text-xs text-muted-foreground sm:grid-cols-3">
-          <PipelineStep label="Clone Repo" active={statusInRange(status, 0, 15)} done={statusPast(status, 15)} />
-          <PipelineStep label="Code Review" active={statusInRange(status, 15, 35)} done={statusPast(status, 35)} />
-          <PipelineStep label="Run Tests" active={statusInRange(status, 35, 55)} done={statusPast(status, 55)} />
-          <PipelineStep label="Fix Issues" active={statusInRange(status, 55, 75)} done={statusPast(status, 75)} />
-          <PipelineStep label="Generate Tests" active={statusInRange(status, 75, 90)} done={statusPast(status, 90)} />
-          <PipelineStep label="Push to GitHub" active={statusInRange(status, 90, 100)} done={statusPast(status, 100)} />
-        </div>
-
-        <Button variant="outline" className="mt-8" onClick={onCancel}>
+      {/* Cancel Button */}
+      <div className="flex justify-center">
+        <Button variant="outline" size="lg" onClick={onCancel} className="gap-2">
+          <XCircle className="h-4 w-4" />
           Cancel Analysis
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
-function PipelineStep({ label, active, done }: { label: string; active: boolean; done: boolean }) {
+function PipelineStep({ 
+  label, 
+  icon: Icon,
+  active, 
+  done,
+  step 
+}: { 
+  label: string; 
+  icon: React.ComponentType<{ className?: string }>;
+  active: boolean; 
+  done: boolean;
+  step: number;
+}) {
   return (
-    <div
-      className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
-        done
-          ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
-          : active
-          ? "border-primary/40 bg-primary/10 text-primary"
-          : "border-border/40 text-muted-foreground"
-      }`}
-    >
-      {done ? (
-        <CheckCircle2 className="h-3.5 w-3.5" />
-      ) : active ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <Clock className="h-3.5 w-3.5" />
-      )}
-      <span className="font-medium">{label}</span>
-    </div>
+    <Card className={`relative overflow-hidden transition-all duration-300 ${
+      done
+        ? "border-green-500/40 bg-green-500/5"
+        : active
+        ? "border-primary/40 bg-primary/5 shadow-lg shadow-primary/10"
+        : "border-border/40 bg-card/50"
+    }`}>
+      <CardContent className="p-4 flex flex-col items-center text-center gap-3">
+        <div className={`relative h-12 w-12 rounded-xl flex items-center justify-center transition-colors ${
+          done
+            ? "bg-green-500/10 text-green-600"
+            : active
+            ? "bg-primary/10 text-primary"
+            : "bg-muted text-muted-foreground"
+        }`}>
+          {done ? (
+            <CheckCircle2 className="h-6 w-6" />
+          ) : active ? (
+            <Loader2 className="h-6 w-6 animate-spin" />
+          ) : (
+            <Icon className="h-6 w-6" />
+          )}
+          <span className={`absolute -top-1 -right-1 h-5 w-5 rounded-full text-[10px] font-bold flex items-center justify-center ${
+            done
+              ? "bg-green-500 text-white"
+              : active
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted-foreground/20 text-muted-foreground"
+          }`}>
+            {step}
+          </span>
+        </div>
+        <span className={`text-sm font-medium ${
+          done
+            ? "text-green-600 dark:text-green-400"
+            : active
+            ? "text-primary"
+            : "text-muted-foreground"
+        }`}>
+          {label}
+        </span>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -318,6 +452,11 @@ function AnalysisResultView({
   result: AnalysisResult;
   analysisId: string;
 }) {
+  const [ciStatus, setCIStatus] = useState<CIStatusResponse | null>(null);
+  const [ciLoading, setCILoading] = useState(false);
+  const [merging, setMerging] = useState(false);
+  const ciPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
   const totalTests = result.test_results?.length ?? 0;
   const passedTests = result.test_results?.filter((t) => t.passed).length ?? 0;
   const failedTests = totalTests - passedTests;
@@ -325,47 +464,138 @@ function AnalysisResultView({
     ? `${result.total_time_taken.toFixed(1)}s`
     : "—";
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Analysis Result
-            </h1>
-            <StatusBadge status={result.status} />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {result.team_name} &middot; {result.team_leader_name}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <a
-              href={analysisApi.getJsonReportUrl(analysisId)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              JSON
-            </a>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <a
-              href={analysisApi.getPdfReportUrl(analysisId)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              PDF
-            </a>
-          </Button>
-        </div>
-      </div>
+  // Fetch CI status
+  const fetchCIStatus = useCallback(async () => {
+    if (!result.pr_url || !result.pr_number) return;
+    setCILoading(true);
+    try {
+      const status = await analysisApi.getCIStatus(analysisId);
+      setCIStatus(status);
+      
+      // Stop polling if CI completed
+      if (status.status === "success" || status.status === "failure") {
+        if (ciPollRef.current) {
+          clearInterval(ciPollRef.current);
+          ciPollRef.current = null;
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching CI status:", err);
+    } finally {
+      setCILoading(false);
+    }
+  }, [analysisId, result.pr_url, result.pr_number]);
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+  // Start CI polling if PR exists
+  useEffect(() => {
+    if (result.pr_url && result.pr_number && !result.merged) {
+      fetchCIStatus();
+      // Poll every 10 seconds
+      ciPollRef.current = setInterval(fetchCIStatus, 10000);
+    }
+    return () => {
+      if (ciPollRef.current) clearInterval(ciPollRef.current);
+    };
+  }, [result.pr_url, result.pr_number, result.merged, fetchCIStatus]);
+
+  // Manual merge handler
+  const handleMerge = async () => {
+    if (!result.pr_number) return;
+    setMerging(true);
+    try {
+      // Note: In production, you'd pass the actual token
+      const res = await analysisApi.mergePR(analysisId, "");
+      if (res.status === "merged") {
+        toast.success("PR merged successfully!");
+        setCIStatus(prev => prev ? { ...prev, merged: true } : null);
+      } else if (res.status === "already_merged") {
+        toast.info("PR was already merged");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to merge PR");
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Hero Header Section */}
+      <Card className="relative overflow-hidden border-border/40 bg-gradient-to-br from-card via-card/95 to-card/90">
+        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px]" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-green-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
+        
+        <CardContent className="relative py-10">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-8">
+            {/* Left: Status Icon */}
+            <div className="flex-shrink-0 flex justify-center lg:justify-start">
+              <div className="relative">
+                <div className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-2xl ${
+                  result.status === "completed" 
+                    ? "bg-gradient-to-br from-green-500/20 to-green-600/10 border-2 border-green-500/30" 
+                    : "bg-gradient-to-br from-destructive/20 to-destructive/10 border-2 border-destructive/30"
+                }`}>
+                  {result.status === "completed" ? (
+                    <CheckCircle2 className="h-12 w-12 text-green-500" />
+                  ) : (
+                    <XCircle className="h-12 w-12 text-destructive" />
+                  )}
+                </div>
+                <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                  <Target className="h-4 w-4 text-primary-foreground" />
+                </div>
+              </div>
+            </div>
+
+            {/* Center: Info */}
+            <div className="flex-1 text-center lg:text-left space-y-3">
+              <div className="flex items-center justify-center lg:justify-start gap-3 flex-wrap">
+                <StatusBadge status={result.status} />
+                {result.pr_url && (
+                  <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/30">
+                    <GitPullRequest className="h-3 w-3 mr-1" />
+                    PR Created
+                  </Badge>
+                )}
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight">Analysis Complete</h1>
+              <p className="text-muted-foreground">
+                <span className="font-medium text-foreground">{result.team_name}</span>
+                <span className="mx-2">•</span>
+                {result.team_leader_name}
+              </p>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button variant="outline" size="default" asChild className="gap-2">
+                <a
+                  href={analysisApi.getJsonReportUrl(analysisId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Download className="h-4 w-4" />
+                  JSON Report
+                </a>
+              </Button>
+              <Button size="default" asChild className="gap-2">
+                <a
+                  href={analysisApi.getPdfReportUrl(analysisId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Download className="h-4 w-4" />
+                  PDF Report
+                </a>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Summary Statistics */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard
           icon={Bug}
           label="Issues Detected"
@@ -393,80 +623,240 @@ function AnalysisResultView({
         />
       </div>
 
-      {/* Repository info card */}
-      <Card className="relative overflow-hidden border border-border/60 bg-card/60 backdrop-blur supports-[backdrop-filter]:bg-card/50">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-100" />
-        <CardHeader className="relative">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <GitBranch className="h-5 w-5 text-primary" />
-            Repository Details
+      {/* Repository & PR Section - Two Column Layout */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Repository info card */}
+        <Card className="relative overflow-hidden border border-border/40 bg-gradient-to-br from-card via-card/95 to-card/90">
+          <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:24px_24px]" />
+          <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-2xl -translate-y-1/4 translate-x-1/4" />
+          <CardHeader className="relative pb-2">
+            <CardTitle className="flex items-center gap-3 text-lg">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+                <Layers className="h-5 w-5 text-primary" />
+              </div>
+              Repository Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative pt-2">
+            <div className="space-y-3">
+              <InfoRow label="Repository" value={result.repo_url} isLink />
+              <InfoRow label="Branch" value={result.branch_name} icon={<GitBranch className="h-4 w-4" />} />
+              <InfoRow label="Team" value={result.team_name} />
+              <InfoRow label="Leader" value={result.team_leader_name} />
+              {result.commit_sha && (
+                <InfoRow label="Commit" value={result.commit_sha.slice(0, 8)} copyValue={result.commit_sha} />
+              )}
+              {result.branch_url && (
+                <InfoRow label="Branch URL" value={result.branch_url} isLink />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* PR and CI Status card */}
+        {(result.pr_url || result.pr_number) && (
+          <Card className="relative overflow-hidden border border-border/40 bg-gradient-to-br from-card via-card/95 to-card/90">
+            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:24px_24px]" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-green-500/5 rounded-full blur-2xl -translate-y-1/4 translate-x-1/4" />
+            <CardHeader className="relative pb-2">
+              <CardTitle className="flex items-center gap-3 text-lg">
+                <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center ring-1 ring-green-500/20">
+                  <GitPullRequest className="h-5 w-5 text-green-600" />
+                </div>
+                Pull Request & CI
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative pt-2">
+              <div className="space-y-4">
+                {/* PR Info Row */}
+                {result.pr_url && (
+                  <div className="flex items-center justify-between rounded-lg border border-border/40 p-3">
+                    <span className="text-sm font-medium text-muted-foreground">Pull Request</span>
+                    <a
+                      href={result.pr_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                    >
+                      <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/30">
+                        #{result.pr_number}
+                      </Badge>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                )}
+                
+                {/* CI Status Row */}
+                <div className="flex items-center justify-between rounded-lg border border-border/40 p-3">
+                  <span className="text-sm font-medium text-muted-foreground">CI Status</span>
+                  <div className="flex items-center gap-2">
+                    {ciLoading && !ciStatus ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <CIStatusBadge status={ciStatus?.status || result.ci_status || "pending"} />
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={fetchCIStatus}
+                      disabled={ciLoading}
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${ciLoading ? "animate-spin" : ""}`} />
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Workflow URL */}
+                {ciStatus?.workflow_url && (
+                  <div className="flex items-center justify-between rounded-lg border border-border/40 p-3">
+                    <span className="text-sm font-medium text-muted-foreground">Workflow</span>
+                    <a
+                      href={ciStatus.workflow_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                    >
+                      View Actions
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                )}
+                
+                {/* Merge Status Row */}
+                <div className="flex items-center justify-between rounded-lg border border-border/40 p-3">
+                  <span className="text-sm font-medium text-muted-foreground">Merge Status</span>
+                  {(ciStatus?.merged || result.merged) ? (
+                    <Badge className="bg-purple-600">
+                      <GitMerge className="mr-1 h-3 w-3" />
+                      Merged
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Not Merged</Badge>
+                  )}
+                </div>
+              </div>
+              
+              {/* Merge Button */}
+              {!result.merged && !ciStatus?.merged && ciStatus?.status === "success" && (
+                <div className="mt-6 pt-4 border-t border-border/40">
+                  <Button
+                    onClick={handleMerge}
+                    disabled={merging}
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    size="lg"
+                  >
+                    {merging ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Merging...
+                      </>
+                    ) : (
+                      <>
+                        <GitMerge className="mr-2 h-4 w-4" />
+                        Merge Pull Request
+                      </>
+                    )}
+                  </Button>
+                  <p className="mt-3 text-xs text-center text-muted-foreground">
+                    CI passed! You can now merge the pull request.
+                  </p>
+                </div>
+              )}
+              
+              {/* CI Failed Message */}
+              {ciStatus?.status === "failure" && (
+                <div className="mt-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-destructive">CI Workflow Failed</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Please check the workflow logs and fix any issues before merging.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Detailed Results Section */}
+      <Card className="relative overflow-hidden border border-border/40 bg-gradient-to-br from-card via-card/95 to-card/90">
+        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:24px_24px]" />
+        <CardHeader className="relative border-b border-border/40 pb-4">
+          <CardTitle className="flex items-center gap-3 text-lg">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+              <BarChart3 className="h-5 w-5 text-primary" />
+            </div>
+            Detailed Analysis
           </CardTitle>
+          <CardDescription>
+            Explore fixes applied, test results, and AI-generated tests
+          </CardDescription>
         </CardHeader>
-        <CardContent className="relative">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <InfoRow label="Repository" value={result.repo_url} isLink />
-            <InfoRow label="Branch" value={result.branch_name} icon={<GitBranch className="h-4 w-4" />} />
-            <InfoRow label="Team" value={result.team_name} />
-            <InfoRow label="Leader" value={result.team_leader_name} />
-            {result.commit_sha && (
-              <InfoRow label="Commit" value={result.commit_sha.slice(0, 8)} copyValue={result.commit_sha} />
+        <CardContent className="relative pt-6">
+          <Tabs defaultValue="fixes" className="space-y-6">
+            <TabsList className="w-full justify-start bg-muted/50 p-1">
+              <TabsTrigger value="fixes" className="flex items-center gap-2 data-[state=active]:bg-background">
+                <Wrench className="h-4 w-4" />
+                <span>Fixes</span>
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {result.fixes?.length ?? 0}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="tests" className="flex items-center gap-2 data-[state=active]:bg-background">
+                <FlaskConical className="h-4 w-4" />
+                <span>Tests</span>
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {totalTests}
+                </Badge>
+              </TabsTrigger>
+              {result.generated_tests && result.generated_tests.length > 0 && (
+                <TabsTrigger value="generated" className="flex items-center gap-2 data-[state=active]:bg-background">
+                  <Shield className="h-4 w-4" />
+                  <span>Generated</span>
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {result.generated_tests.length}
+                  </Badge>
+                </TabsTrigger>
+              )}
+              {result.summary && (
+                <TabsTrigger value="summary" className="flex items-center gap-2 data-[state=active]:bg-background">
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Summary</span>
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+            {/* Fixes Tab */}
+            <TabsContent value="fixes" className="mt-0">
+              <FixesTable fixes={result.fixes ?? []} />
+            </TabsContent>
+
+            {/* Tests Tab */}
+            <TabsContent value="tests" className="mt-0">
+              <TestsTable tests={result.test_results ?? []} />
+            </TabsContent>
+
+            {/* Generated Tests Tab */}
+            {result.generated_tests && result.generated_tests.length > 0 && (
+              <TabsContent value="generated" className="mt-0">
+                <GeneratedTestsList tests={result.generated_tests} />
+              </TabsContent>
             )}
-            {result.branch_url && (
-              <InfoRow label="Branch URL" value={result.branch_url} isLink />
+
+            {/* Summary Tab */}
+            {result.summary && (
+              <TabsContent value="summary" className="mt-0">
+                <SummaryView summary={result.summary} />
+              </TabsContent>
             )}
-          </div>
+          </Tabs>
         </CardContent>
       </Card>
-
-      {/* Tabs: Fixes / Tests / Generated Tests */}
-      <Tabs defaultValue="fixes" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="fixes" className="flex items-center gap-1.5">
-            <Wrench className="h-4 w-4" />
-            Fixes ({result.fixes?.length ?? 0})
-          </TabsTrigger>
-          <TabsTrigger value="tests" className="flex items-center gap-1.5">
-            <FlaskConical className="h-4 w-4" />
-            Tests ({totalTests})
-          </TabsTrigger>
-          {result.generated_tests && result.generated_tests.length > 0 && (
-            <TabsTrigger value="generated" className="flex items-center gap-1.5">
-              <Shield className="h-4 w-4" />
-              Generated ({result.generated_tests.length})
-            </TabsTrigger>
-          )}
-          {result.summary && (
-            <TabsTrigger value="summary" className="flex items-center gap-1.5">
-              <BarChart3 className="h-4 w-4" />
-              Summary
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        {/* Fixes Tab */}
-        <TabsContent value="fixes">
-          <FixesTable fixes={result.fixes ?? []} />
-        </TabsContent>
-
-        {/* Tests Tab */}
-        <TabsContent value="tests">
-          <TestsTable tests={result.test_results ?? []} />
-        </TabsContent>
-
-        {/* Generated Tests Tab */}
-        {result.generated_tests && result.generated_tests.length > 0 && (
-          <TabsContent value="generated">
-            <GeneratedTestsList tests={result.generated_tests} />
-          </TabsContent>
-        )}
-
-        {/* Summary Tab */}
-        {result.summary && (
-          <TabsContent value="summary">
-            <SummaryView summary={result.summary} />
-          </TabsContent>
-        )}
-      </Tabs>
     </div>
   );
 }
@@ -493,6 +883,50 @@ function StatusBadge({ status }: { status: string }) {
         <Clock className="mr-1 h-3 w-3" />
       )}
       {status.charAt(0).toUpperCase() + status.slice(1)}
+    </Badge>
+  );
+}
+
+function CIStatusBadge({ status }: { status: string }) {
+  const statusConfig: Record<string, { variant: "default" | "destructive" | "secondary" | "outline"; className: string; icon: React.ReactNode; label: string }> = {
+    success: {
+      variant: "default",
+      className: "bg-green-500/10 text-green-600 border-green-500/30 dark:text-green-400",
+      icon: <CheckCircle2 className="mr-1 h-3 w-3" />,
+      label: "Passed"
+    },
+    failure: {
+      variant: "destructive",
+      className: "",
+      icon: <XCircle className="mr-1 h-3 w-3" />,
+      label: "Failed"
+    },
+    running: {
+      variant: "secondary",
+      className: "bg-blue-500/10 text-blue-600 border-blue-500/30 dark:text-blue-400",
+      icon: <PlayCircle className="mr-1 h-3 w-3 animate-pulse" />,
+      label: "Running"
+    },
+    pending: {
+      variant: "outline",
+      className: "bg-amber-500/10 text-amber-600 border-amber-500/30 dark:text-amber-400",
+      icon: <Clock className="mr-1 h-3 w-3" />,
+      label: "Pending"
+    },
+    unknown: {
+      variant: "outline",
+      className: "",
+      icon: <Clock className="mr-1 h-3 w-3" />,
+      label: "Unknown"
+    }
+  };
+
+  const config = statusConfig[status] || statusConfig.unknown;
+  
+  return (
+    <Badge variant={config.variant} className={config.className}>
+      {config.icon}
+      {config.label}
     </Badge>
   );
 }
