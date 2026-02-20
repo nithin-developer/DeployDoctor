@@ -13,7 +13,7 @@ if (import.meta.env.DEV) {
 }
 
 // Pages
-import Dashboard from "@/pages/dashboard";
+// import Dashboard from "@/pages/dashboard";
 import SignIn from "@/pages/auth/sign-in";
 import SignUp from "@/pages/auth/sign-up";
 import TwoFAVerify from "@/pages/auth/two-fa-verify";
