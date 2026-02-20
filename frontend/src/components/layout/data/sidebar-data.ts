@@ -1,9 +1,9 @@
-import { IconLayoutDashboard, IconShieldLock, IconAnalyze } from "@tabler/icons-react";
+import { IconShieldLock, IconAnalyze } from "@tabler/icons-react";
 import { Settings } from "lucide-react";
 
 import { IconPalette, IconTool, IconLock } from "@tabler/icons-react";
 import { type SidebarData } from "../types";
-import Logo from "@/assets/vvce.png";
+import Logo from "@/assets/vvce.jpg";
 
 export const sidebarData: SidebarData = {
   user: {

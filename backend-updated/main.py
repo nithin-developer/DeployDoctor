@@ -18,6 +18,9 @@ from routes.analysis_router import router as analysis_router
 from routes.health_router import router as health_router
 from config.settings import get_settings
 
+# Import models to ensure they are registered with SQLAlchemy
+from models.users import User, RefreshToken
+
 settings = get_settings()
 
 app = FastAPI(
