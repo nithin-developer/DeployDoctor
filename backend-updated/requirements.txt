@@ -31,3 +31,4 @@ reportlab
 ruff
 flake8
 pylint
+pydantic[email]

@@ -22,11 +22,11 @@ export const sidebarData: SidebarData = {
     {
       title: "Features",
       items: [
-        {
-          title: "Dashboard",
-          url: "/",
-          icon: IconLayoutDashboard,
-        },
+        // {
+        //   title: "Dashboard",
+        //   url: "/",
+        //   icon: IconLayoutDashboard,
+        // },
         {
           title: "Repository Analysis",
           url: "/analysis",

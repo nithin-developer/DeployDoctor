@@ -149,7 +149,7 @@ function App() {
             }
           >
             {/* Dashboard */}
-            <Route index element={<Dashboard />} />
+            <Route index element={<AnalysisPage />} />
 
             {/* Analysis Routes */}
             <Route path="analysis" element={<AnalysisPage />} />
